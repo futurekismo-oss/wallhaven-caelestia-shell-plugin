@@ -1,4 +1,4 @@
-A wallpaper program that pulls wallpapers from wallhaven and integrates with caelestia shell
+A wallpaper script that pulls wallpapers from wallhaven and integrates with caelestia shell
 
 # Features
 - API key integration
