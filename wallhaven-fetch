@@ -89,7 +89,7 @@ def write_default_config():  # Default Config file
     "atleast": "1920x1080",
 
     // Sorting: "toplist", "random", "date_added", "views", "favorites", "relevance"
-    "sorting": "toplist",
+    "sorting": "relevance",
 
     // Order: "desc", "asc"
     "order": "desc",
@@ -152,13 +152,14 @@ def api_get(url, api_key=""):
         with urllib.request.urlopen(req, timeout=15) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as e:  # Catches HTTP Errors
-        print(f"API error: {e.code} {e.reason}", file=sys.stderr)
+        msg = f"API error: {e.code} {e.reason}"
         if e.code == 429:  # Special case for rate limits errors
             print("Rate limited. API key helps.", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(msg)
     except urllib.error.URLError as e:  # Catches Network Errors
-        print(f"Network error: {e.reason}", file=sys.stderr)
-        sys.exit(1)
+        msg = f"Network error: {e.reason}"
+        print(msg, file=sys.stderr)
+        raise RuntimeError(msg)
 
 
 def download_file(url, dest):  # Downloads a image and stores it in a given dir
@@ -205,16 +206,44 @@ def set_wallpaper(path, config=None):
     return True
 
 
+def prune_cache(idx, config):
+    """Enforces the max_keep_wallpapers limit by deleting older files."""
+    max_keep = config.get("max_keep_wallpapers", 30)
+    if max_keep <= 0 or len(idx) <= max_keep:
+        return idx
+
+    # Dicts preserve insertion order, meaning the oldest keys are at the beginning
+    all_keys = list(idx.keys())
+    overflow_count = len(idx) - max_keep
+    keys_to_remove = all_keys[:overflow_count]
+
+    print(f"Cache limit exceeded. Pruning {overflow_count} old wallpaper(s)...")
+    for wid in keys_to_remove:
+        path_str = idx[wid].get("path")
+        if path_str:
+            p = Path(path_str)
+            if p.exists():
+                p.unlink(missing_ok=True)
+                print(f"Auto-deleted old wallpaper: {p.name}")
+        del idx[wid]
+
+    save_index(idx)
+    return idx
+
+
 def cmd_random(config):
     idx = load_index()
     wall_dir = get_wallpaper_dir()
     wall_dir.mkdir(parents=True, exist_ok=True)
     existing_ids = set(idx.keys())
     notify("Wallhaven", "Fetching random wallpaper...")
+
+    sorting = config.get("sorting", "random")
+
     params = {
-        "categories": config.get("categories", "1,2,3"),
+        "categories": config.get("categories", "111"),
         "purity": config.get("purity", "100"),
-        "sorting": config.get("sorting", "toplist"),
+        "sorting": sorting,
         "order": config.get("order", "desc"),
     }
     if config.get("query"):
@@ -225,29 +254,43 @@ def cmd_random(config):
         params["resolutions"] = ",".join(config["resolutions"])
     if config.get("ratios"):
         params["ratios"] = config["ratios"]
+
+    if sorting == "toplist" and "topRange" not in params:
+        params["topRange"] = "1m"
+
     ak = config.get("api_key", "")
-    data = api_get(
-        f"{API_BASE}/search?" + urllib.parse.urlencode({**params, "page": 1}), ak
-    )  # Gets the metadata from the request
-    last = min(
-        data.get("last_page", 1), 20
-    )  # Gets the last page, caps it under 20 cause free tier dont go over 20 pages
+
+    query_string = urllib.parse.urlencode(params)
+    data = api_get(f"{API_BASE}/search?{query_string}", ak)
+
+    if sorting == "random":
+        last = 1
+    else:
+        last = data.get("meta", {}).get("last_page", 1)
+
     attempted = set()
-    for _ in range(15):  # Given 15 attemps to find a valid un-donwload wallpaper
-        page = rnd.randint(1, last)  # Picks a random number between 1 and the last page
-        if page in attempted:  # Doesnt download a page that already failed again
+    for _ in range(15):
+        page = rnd.randint(1, last)
+        if page in attempted:
             continue
-        attempted.add(page)  # Adds the current page to attempted
-        data = api_get(
-            f"{API_BASE}/search?" + urllib.parse.urlencode({**params, "page": page}), ak
-        )  # Returns an array of 24 wallpapers
-        rnd.shuffle(data.get("data", []))  # shuffles the array
-        for wp in data.get("data", []):
+        attempted.add(page)
+
+        page_params = {**params, "page": page}
+        if sorting == "random":
+            page_params["seed"] = str(rnd.randint(100000, 999999))
+
+        data = api_get(f"{API_BASE}/search?" + urllib.parse.urlencode(page_params), ak)
+        wallpapers = data.get("data", [])
+
+        if not wallpapers:
+            continue
+
+        rnd.shuffle(wallpapers)
+        for wp in wallpapers:
             wid = wp["id"]
             if wid in existing_ids:
-                # uses the wid ( id ) to skip already downloaded wallpapers.
                 continue
-            # Finds a winner and then downloads it.
+
             img_url = wp["path"]
             ext = os.path.splitext(img_url)[1] or ".jpg"
             dest = wall_dir / f"wallhaven-{wid}{ext}"
@@ -257,25 +300,25 @@ def cmd_random(config):
             except Exception as e:
                 print(f"Download failed: {e}", file=sys.stderr)
                 continue
+
             if is_duplicate(dest, wall_dir):
-                # If download wallpaper is a duplicate it deletes it and tries
-                # again
                 print(f"Duplicate (same content), skipping")
                 dest.unlink(missing_ok=True)
                 existing_ids.add(wid)
                 continue
-            # Stores the wallpaper metadata in idx ( the index )
+
             idx[wid] = {
                 "path": str(dest),
                 "url": wp["url"],
                 "resolution": wp.get("resolution", ""),
             }
-            save_index(idx)  # Saves teh index
+            save_index(idx)
             print(f"Saved: {dest.name}")
-            set_wallpaper(dest, config)  # Sets the wallpaper to the current wallpaper
+            set_wallpaper(dest, config)
             notify("Wallhaven", f"Set: {dest.name}", "low")
             return
-    notify("Wallhaven", "No new wallpapers found. Try different filters.") # Failed. Informs the user
+
+    notify("Wallhaven", "No new wallpapers found. Try different filters.")
 
 
 def cmd_search(config, query):
@@ -310,7 +353,7 @@ def cmd_download(config, wid):
     wall_dir = get_wallpaper_dir()
     wall_dir.mkdir(parents=True, exist_ok=True)
 
-    data = api_get(f"{API_BASE}/wallpaper/{wid}", config.get("api_key", ""))
+    data = api_get(f"{API_BASE}/w/{wid}", config.get("api_key", ""))
     wp = data.get("data", {})
     img_url = wp.get("path")
     if not img_url:
@@ -337,6 +380,29 @@ def cmd_download(config, wid):
     print(f"Saved: {dest.name}")
     set_wallpaper(dest, config)
     notify("Wallhaven", f"Set: {dest.name}", "low")
+
+
+def cmd_clear():
+    """Deletes all wallpapers managed by the index file off the machine."""
+    idx = load_index()
+    if not idx:
+        print("Cache index is already empty.")
+        return
+
+    print(f"Found {len(idx)} wallpapers in cache. Purging files...")
+    deleted_count = 0
+    for wid, info in idx.items():
+        path_str = info.get("path")
+        if path_str:
+            p = Path(path_str)
+            if p.exists():
+                p.unlink(missing_ok=True)
+                print(f"Deleted: {p.name}")
+                deleted_count += 1
+
+    save_index({})
+    print(f"Successfully removed {deleted_count} files and cleared index.")
+    notify("Wallhaven", f"Cleared {deleted_count} wallpapers from disk.", "normal")
 
 
 LOCK = Path("/tmp/wallhaven-daemon.lock")
@@ -388,6 +454,7 @@ def main():
         print("  wallhaven-fetch daemon             Daemon mode (auto-rotate)")
         print("  wallhaven-fetch search <query>     Search Wallhaven")
         print("  wallhaven-fetch download <id>      Download by ID")
+        print("  wallhaven-fetch clear              Wipe downloaded wallpapers & cache")
         print("  wallhaven-fetch config             Open config file")
         sys.exit(0)
     try:
@@ -401,6 +468,8 @@ def main():
             cmd_random(config)
         elif cmd == "daemon":
             cmd_daemon(config)
+        elif cmd == "clear":
+            cmd_clear()
         elif cmd == "search" and len(sys.argv) > 2:
             cmd_search(config, " ".join(sys.argv[2:]))
         elif cmd == "download" and len(sys.argv) > 2:
@@ -411,6 +480,7 @@ def main():
             print(f"Unknown command: {cmd}", file=sys.stderr)
             sys.exit(1)
     except Exception as e:
+        print(f"Script Error: {e}")
         notify("Wallhaven", f"Error: {e}", "critical")
 
 
