@@ -26,7 +26,7 @@ Clone the repo and run the install script
 ```bash 
 curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/install.sh | bash
 ```
-## Unistall
+## Uninstall
 
 Run the uninstall script
 
