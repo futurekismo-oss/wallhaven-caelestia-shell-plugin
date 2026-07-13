@@ -17,6 +17,7 @@ A wallpaper script that pulls wallpapers from wallhaven and integrates with cael
   wallhaven-fetch config          -  Open config file
 ```
 
+The caelestia shortcut is **SUPER + ALT + W**
 
 # Installation
 Clone the repo and run the install script 
@@ -34,4 +35,6 @@ Run the uninstall script
 
 ```bash 
 curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/uninstall.sh | bash
+
+
 ```
