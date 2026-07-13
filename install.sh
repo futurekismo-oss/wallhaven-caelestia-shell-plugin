@@ -22,7 +22,7 @@ curl -s -L "$FILE_URL" -o "$APP_NAME"
 
 chmod u+x "$APP_NAME"
 mkdir -p "$HOME/.local/bin"
-mv "$APP_NAME" "$HOME/.local/bin/"
+cp "$APP_NAME" "$HOME/.local/bin/"
 echo "Installed to $INSTALL_PATH"
 
 # Check if they wanna append this to thier shell.json
@@ -58,6 +58,7 @@ HYPR_USER_FILE="$HOME/.config/caelestia/hypr-user.lua"
 if [ -f "$HYPR_USER_FILE" ]; then
 	read -p "Do you want to add the keybind to $HYPR_USER_FILE? (y/n): " confirm_bind
 	if [[ "$confirm_bind" == [yY] ]]; then
+		sed -i '/wallhaven-fetch/d' "$HYPR_USER_FILE" # Delete any lines that has it already
 		echo 'hl.bind("SUPER + ALT + W", hl.dsp.exec_cmd("/home/futurekismo/.local/bin/wallhaven-fetch random"))' >>"$HYPR_USER_FILE"
 		echo "Keybind added to $HYPR_USER_FILE."
 	else
