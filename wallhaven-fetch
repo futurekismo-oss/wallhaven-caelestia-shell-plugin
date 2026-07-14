@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, sys, hashlib, urllib.request, urllib.parse, subprocess, random as rnd, time, signal
+import json, os, sys, hashlib, urllib.request, urllib.parse, subprocess, random as rnd, time, signal, base64, shutil
 from pathlib import Path
 
 HOME = Path.home()
@@ -8,7 +8,8 @@ CACHE_DIR = HOME / ".cache" / "caelestia"
 CONFIG_FILE = CONFIG_DIR / "wallhaven.jsonc"
 INDEX_FILE = CACHE_DIR / "wallhaven-index.json"
 API_BASE = "https://wallhaven.cc/api/v1"
-UA = "Caelestia-Wallhaven/1.0"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+THUMB_CACHE_DIR = CACHE_DIR / "thumbnails"
 
 # Uses a Notify Id so the notification history
 # doesnt clutter by replacing the notifcation rather than
@@ -164,9 +165,14 @@ def api_get(url, api_key=""):
 
 def download_file(url, dest):  # Downloads a image and stores it in a given dir
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        with open(dest, "wb") as f:
-            f.write(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            with open(dest, "wb") as f:
+                f.write(resp.read())
+    except Exception as e:
+        if dest.exists():
+            dest.unlink(missing_ok=True)
+        raise e
 
 
 def is_duplicate(dest, wallpaper_dir):
@@ -203,16 +209,15 @@ def set_wallpaper(path, config=None):
     if caelestia.returncode != 0:
         print(f"Failed to set wallpaper: {caelestia.stderr.strip()}", file=sys.stderr)
         return False
+
     return True
 
 
 def prune_cache(idx, config):
-    """Enforces the max_keep_wallpapers limit by deleting older files."""
     max_keep = config.get("max_keep_wallpapers", 30)
     if max_keep <= 0 or len(idx) <= max_keep:
         return idx
 
-    # Dicts preserve insertion order, meaning the oldest keys are at the beginning
     all_keys = list(idx.keys())
     overflow_count = len(idx) - max_keep
     keys_to_remove = all_keys[:overflow_count]
@@ -263,6 +268,8 @@ def cmd_random(config):
     query_string = urllib.parse.urlencode(params)
     data = api_get(f"{API_BASE}/search?{query_string}", ak)
 
+    print(query_string)
+
     if sorting == "random":
         last = 1
     else:
@@ -302,7 +309,7 @@ def cmd_random(config):
                 continue
 
             if is_duplicate(dest, wall_dir):
-                print(f"Duplicate (same content), skipping")
+                print("Duplicate (same content), skipping")
                 dest.unlink(missing_ok=True)
                 existing_ids.add(wid)
                 continue
@@ -321,10 +328,67 @@ def cmd_random(config):
     notify("Wallhaven", "No new wallpapers found. Try different filters.")
 
 
+def get_cached_thumbnail(url):
+    THUMB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+    ext = os.path.splitext(url)[1] or ".jpg"
+    dest = THUMB_CACHE_DIR / f"{url_hash}{ext}"
+    if not dest.exists() or dest.stat().st_size == 0:
+        try:
+            download_file(url, dest)
+        except Exception as e:
+            print(f"Error downloading {url}: {e}", file=sys.stderr)
+            return None
+    return dest
+
+
+def cmd_preview(url):
+    sys.stdout.write("\033_Ga=d,d=A\033\\")
+    sys.stdout.flush()
+
+    local_path = get_cached_thumbnail(url.strip())
+    if not local_path or not local_path.exists():
+        print("Failed to load thumbnail.")
+        return
+
+    cols = os.environ.get("FZF_PREVIEW_COLUMNS", "80")
+    lines = os.environ.get("FZF_PREVIEW_LINES", "40")
+
+    if shutil.which("chafa"):
+        subprocess.run(["chafa", f"--size={cols}x{lines}", str(local_path)])
+        return
+
+    if shutil.which("kitten"):
+        subprocess.run([
+            "kitten", "icat",
+            "--clear",
+            "--transfer-mode=memory",
+            "--stdin=no",
+            f"--place={cols}x{lines}@0x0",
+            str(local_path)
+        ])
+        return
+    elif shutil.which("kitty"):
+        subprocess.run([
+            "kitty", "+kitten", "icat",
+            "--clear",
+            "--transfer-mode=memory",
+            "--stdin=no",
+            f"--place={cols}x{lines}@0x0",
+            str(local_path)
+        ])
+        return
+
+    print(f"Thumbnail cached: {local_path}\n\nInstall 'chafa' for in-terminal preview.")
+
+
 def cmd_search(config, query):
+    if shutil.which("fzf") is None:
+        print("Error: fzf is not installed. Please install it.", file=sys.stderr)
+        sys.exit(1)
     params = {
         "q": query,
-        "categories": config.get("categories", "1,2,3"),
+        "categories": config.get("categories", "111"),
         "purity": config.get("purity", "100"),
         "page": 1,
     }
@@ -332,11 +396,41 @@ def cmd_search(config, query):
         f"{API_BASE}/search?" + urllib.parse.urlencode(params),
         config.get("api_key", ""),
     )
-    for wp in data.get("data", [])[:15]:
-        tags = ", ".join(t["name"] for t in wp.get("tags", [])[:4])
-        print(f"{wp['id']:>8}  {wp['resolution']:>12}  {wp['url']}")
-        if tags:
-            print(f"{'':8}  tags: {tags}")
+    wallpapers = data.get("data", [])[:15]
+    if not wallpapers:
+        print("No wallpapers found.")
+        return
+    choices = []
+    for wp in wallpapers:
+        wid = wp["id"]
+        res = wp["resolution"]
+        thumb = wp["thumbs"]["small"]
+        choices.append(f"{wid}|{res}|{thumb}")
+
+    script_path = os.path.abspath(__file__)
+
+    process = subprocess.run(
+        [
+            "fzf", 
+            "--height", "80%", 
+            "--reverse", 
+            "--delimiter", r"\|", 
+            "--with-nth", "1,2",
+            "--preview", f'"{sys.executable}" "{script_path}" preview \'{{3}}\'',
+            "--preview-window", "right:50%",
+        ],
+        input="\n".join(choices),
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+
+    sys.stdout.write("\033_Ga=d,d=A\033\\")
+    sys.stdout.flush()
+
+    if process.returncode == 0 and process.stdout:
+        parts = process.stdout.strip().split("|")
+        selected_id = parts[0]
+        cmd_download(config, selected_id)
 
 
 def cmd_download(config, wid):
@@ -383,7 +477,6 @@ def cmd_download(config, wid):
 
 
 def cmd_clear():
-    """Deletes all wallpapers managed by the index file off the machine."""
     idx = load_index()
     if not idx:
         print("Cache index is already empty.")
@@ -472,6 +565,8 @@ def main():
             cmd_clear()
         elif cmd == "search" and len(sys.argv) > 2:
             cmd_search(config, " ".join(sys.argv[2:]))
+        elif cmd == "preview" and len(sys.argv) > 2:
+            cmd_preview(sys.argv[2])
         elif cmd == "download" and len(sys.argv) > 2:
             cmd_download(config, sys.argv[2])
         elif cmd == "config":

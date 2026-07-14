@@ -17,6 +17,12 @@ if ! command -v jq &>/dev/null; then
 	exit 1
 fi
 
+# fzf
+if ! command -v fzf &> /dev/null; then
+	echo "fzf is required to use the thumbnail system"
+	exit 1
+fi
+
 echo "Downloading $APP_NAME..."
 curl -s -L "$FILE_URL" -o "$APP_NAME"
 
