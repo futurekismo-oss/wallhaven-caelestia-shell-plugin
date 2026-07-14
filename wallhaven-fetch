@@ -330,7 +330,7 @@ def cmd_random(config):
 
 def get_cached_thumbnail(url):
     THUMB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+    url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
     ext = os.path.splitext(url)[1] or ".jpg"
     dest = THUMB_CACHE_DIR / f"{url_hash}{ext}"
     if not dest.exists() or dest.stat().st_size == 0:
@@ -359,31 +359,24 @@ def cmd_preview(url):
         return
 
     if shutil.which("kitten"):
-        subprocess.run(
-            [
-                "kitten",
-                "icat",
-                "--clear",
-                "--transfer-mode=memory",
-                "--stdin=no",
-                f"--place={cols}x{lines}@0x0",
-                str(local_path),
-            ]
-        )
+        subprocess.run([
+            "kitten", "icat",
+            "--clear",
+            "--transfer-mode=memory",
+            "--stdin=no",
+            f"--place={cols}x{lines}@0x0",
+            str(local_path)
+        ])
         return
     elif shutil.which("kitty"):
-        subprocess.run(
-            [
-                "kitty",
-                "+kitten",
-                "icat",
-                "--clear",
-                "--transfer-mode=memory",
-                "--stdin=no",
-                f"--place={cols}x{lines}@0x0",
-                str(local_path),
-            ]
-        )
+        subprocess.run([
+            "kitty", "+kitten", "icat",
+            "--clear",
+            "--transfer-mode=memory",
+            "--stdin=no",
+            f"--place={cols}x{lines}@0x0",
+            str(local_path)
+        ])
         return
 
     print(f"Thumbnail cached: {local_path}\n\nInstall 'chafa' for in-terminal preview.")
@@ -403,7 +396,7 @@ def cmd_search(config, query):
         f"{API_BASE}/search?" + urllib.parse.urlencode(params),
         config.get("api_key", ""),
     )
-    wallpapers = data.get("data", [])[:30]
+    wallpapers = data.get("data", [])[:15]
     if not wallpapers:
         print("No wallpapers found.")
         return
@@ -411,25 +404,21 @@ def cmd_search(config, query):
     for wp in wallpapers:
         wid = wp["id"]
         res = wp["resolution"]
-        thumb = wp["thumbs"]["original"]
+        # Pull the 'large' resolution thumbnail instead of 'small' to keep the terminal preview crisp
+        thumb = wp.get("thumbs", {}).get("large", wp.get("thumbs", {}).get("small", ""))
         choices.append(f"{wid}|{res}|{thumb}")
 
     script_path = os.path.abspath(__file__)
 
     process = subprocess.run(
         [
-            "fzf",
-            "--height",
-            "80%",
-            "--reverse",
-            "--delimiter",
-            r"\|",
-            "--with-nth",
-            "1,2",
-            "--preview",
-            f'"{sys.executable}" "{script_path}" preview \'{{3}}\'',
-            "--preview-window",
-            "right:50%",
+            "fzf", 
+            "--height", "80%", 
+            "--reverse", 
+            "--delimiter", r"\|", 
+            "--with-nth", "1,2",
+            "--preview", f'"{sys.executable}" "{script_path}" preview \'{{3}}\'',
+            "--preview-window", "right:50%",
         ],
         input="\n".join(choices),
         stdout=subprocess.PIPE,
