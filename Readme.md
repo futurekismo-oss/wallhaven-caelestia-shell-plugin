@@ -1,4 +1,6 @@
+# WALLHAVEN FETCH
 A wallpaper script that pulls wallpapers from wallhaven and integrates with caelestia shell
+
 
 # Features
 - API key integration
@@ -6,6 +8,8 @@ A wallpaper script that pulls wallpapers from wallhaven and integrates with cael
 - Json config file ( with comments )
 - Interval changes with the daemon
 - Dynamic colorscheme updater ( Caelestia shell Integration )
+
+
 
 # Usage
 ```
@@ -21,7 +25,7 @@ A wallpaper script that pulls wallpapers from wallhaven and integrates with cael
 The caelestia shortcut is **SUPER + ALT + W**
 
 The daemon runs periodically based on the interval you set in the config, if you
-want the interval to autostart with your computer, you can add this to your
+want the daemon to automatically start with your computer, you can add this to your
 *hypr-user.lua*
 
 ```lua
@@ -30,8 +34,11 @@ hl.on("hyprland.start", function()
 end)
 ```
 
+
 The external daemon can be used with systemd timers or cronjobs
-PS: if you dont know how to use these stick with the normal daemon
+*PS: if you don't know how to use these, stick with the normal daemon*
+
+
 
 # Installation
 Clone the repo and run the install script
