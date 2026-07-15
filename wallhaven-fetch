@@ -630,7 +630,6 @@ def main():
         elif cmd == "daemon":
             cmd_daemon(config)
         elif cmd == "external-daemon":
-            print("external mode")
             cmd_daemon(config, run_loop=False)
         elif cmd == "clear":
             cmd_clear()
