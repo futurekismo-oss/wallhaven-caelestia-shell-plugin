@@ -4,13 +4,13 @@ A wallpaper script that pulls wallpapers from wallhaven and integrates with cael
 - API key integration
 - Query, Purity and Category selection
 - Json config file ( with comments )
-- Interval changes with the daemon
+- Interval changes with the daemon <- WIP
 - Dynamic colorscheme updater ( Caelestia shell Integration )
 
 # Usage
 ```
   wallhaven-fetch random          -  Random from saved filters
-  wallhaven-fetch daemon          -  Daemon mode (auto-rotate)
+  wallhaven-fetch daemon          -  Daemon mode (auto-rotate) <- WIP
   wallhaven-fetch search <query>  -  Search Wallhaven
   wallhaven-fetch download <id>   -  Download by ID
   wallhaven-fetch clear           -  Wipe downloaded wallpapers & cache
@@ -20,21 +20,27 @@ A wallpaper script that pulls wallpapers from wallhaven and integrates with cael
 The caelestia shortcut is **SUPER + ALT + W**
 
 # Installation
-Clone the repo and run the install script 
+Clone the repo and run the install script
 
 **OR**
 
-```bash 
+```bash
 curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/install.sh | bash
 ```
+
+## Update
+
+```bash
+curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash
+```
+
 ## Uninstall
 
 Run the uninstall script
 
 **OR**
 
-```bash 
+```bash
 curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/uninstall.sh | bash
-
-
 ```
+
