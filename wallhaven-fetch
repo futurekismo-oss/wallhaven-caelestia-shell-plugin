@@ -8,6 +8,8 @@ import urllib.error
 import urllib.request
 import urllib.parse
 import random as rnd
+import signal
+import time
 import shutil
 from pathlib import Path
 
@@ -549,54 +551,72 @@ def cmd_clear():
 LOCK = Path("/tmp/wallhaven-daemon.lock")
 
 
-# def cmd_daemon(config):
-#     if not config.get("daemon_enabled", False):
-#         notify("Wallhaven", "Daemon disabled (set daemon_enabled: true in config)")
-#         return
-#     interval = config.get("interval_minutes", 5)
-#     if interval <= 0:
-#         notify("Wallhaven", "Daemon off (set interval_minutes > 0 in config)")
-#         return
-#
-#     try:
-#         pid = int(LOCK.read_text().strip())
-#         os.kill(pid, 0)
-#         notify("Wallhaven", "Daemon already running")
-#         return
-#     except (FileNotFoundError, ValueError, ProcessLookupError):
-#         pass
-#
-#     LOCK.write_text(str(os.getpid()))
-#
-#     def unlock(*_):
-#         LOCK.unlink(missing_ok=True)
-#         notify("Wallhaven", "Daemon stopped")
-#         sys.exit(0)
-#
-#     signal.signal(signal.SIGTERM, unlock)
-#     signal.signal(signal.SIGINT, unlock)
-#
-#     notify("Wallhaven", f"Daemon started (every {interval} min)", "low")
-#
-#     while True:
-#         try:
-#             cmd_random(config)
-#         except SystemExit:
-#             pass
-#         except Exception as e:
-#             notify("Wallhaven", f"Daemon error: {e}", "critical")
-#         time.sleep(interval * 60)
+def cmd_daemon(config, run_loop=True):
+    if not config.get("daemon_enabled", False):
+        notify("Wallhaven", "Daemon disabled (set daemon_enabled: true in config)")
+        return
+
+    interval = config.get("interval_minutes", 5)
+    if interval <= 0:
+        notify("Wallhaven", "Daemon off (set interval_minutes > 0 in config)")
+        return
+
+    # Check lock
+    try:
+        pid = int(LOCK.read_text().strip())
+        os.kill(pid, 0)
+        notify("Wallhaven", "Daemon already running")
+        return
+    except (FileNotFoundError, ValueError, ProcessLookupError):
+        pass
+
+    # If the user requested the daemon to run in loop/background mode
+    if run_loop:
+        LOCK.write_text(str(os.getpid()))
+
+        def unlock(*_):
+            LOCK.unlink(missing_ok=True)
+            notify("Wallhaven", "Daemon stopped")
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, unlock)
+        signal.signal(signal.SIGINT, unlock)
+
+        notify("Wallhaven", f"Daemon started (every {interval} min)", "low")
+
+        while True:
+            try:
+                cmd_random(config)
+            except SystemExit:
+                pass
+            except Exception as e:
+                notify("Wallhaven", f"Daemon error: {e}", "critical")
+            time.sleep(interval * 60)
+    else:
+        LOCK.write_text(str(os.getpid()))
+        try:
+            cmd_random(config)
+        except SystemExit:
+            pass
+        except Exception as e:
+            notify("Wallhaven", f"Daemon error: {e}", "critical")
+        finally:
+            LOCK.unlink(missing_ok=True)
 
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print("Usage:")
         print("  wallhaven-fetch random             Random from saved filters")
-        # print("  wallhaven-fetch daemon             Daemon mode (auto-rotate)")
+        print("  wallhaven-fetch daemon             Daemon mode (auto-rotate)")
         print("  wallhaven-fetch search <query>     Search Wallhaven")
         print("  wallhaven-fetch download <id>      Download by ID")
         print("  wallhaven-fetch clear              Wipe downloaded wallpapers & cache")
         print("  wallhaven-fetch config             Open config file")
+        print(
+            "  wallhaven-fetch external-daemon    Daemon mode (auto-rotate) (external mode)"
+        )
+
         sys.exit(0)
     try:
         config = load_config()
@@ -607,8 +627,11 @@ def main():
     try:
         if cmd == "random":
             cmd_random(config)
-        # elif cmd == "daemon":
-        #     cmd_daemon(config)
+        elif cmd == "daemon":
+            cmd_daemon(config)
+        elif cmd == "external-daemon":
+            print("external mode")
+            cmd_daemon(config, run_loop=False)
         elif cmd == "clear":
             cmd_clear()
         elif cmd == "search" and len(sys.argv) > 2:
