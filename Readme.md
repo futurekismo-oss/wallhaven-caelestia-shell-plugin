@@ -1,4 +1,4 @@
-# WALLHAVEN FETCH
+# Wallhaven Fetch
 A wallpaper script that pulls wallpapers from wallhaven and integrates with caelestia shell
 
 
