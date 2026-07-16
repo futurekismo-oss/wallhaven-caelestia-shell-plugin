@@ -56,7 +56,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-cae
 ## Update
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash
+bash <(curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh)
 ```
 
 ## Uninstall
