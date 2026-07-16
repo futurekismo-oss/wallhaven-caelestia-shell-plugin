@@ -476,7 +476,7 @@ def cmd_update():
         sys.exit(0)
     else:
         print(
-            "Updater failed. Ensure you have network connectivity and permissions.",
+            "Updater failed. Error: {result.stderr}",
             file=sys.stderr,
         )
         sys.exit(1)
