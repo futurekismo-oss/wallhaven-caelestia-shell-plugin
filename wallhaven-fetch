@@ -156,7 +156,7 @@ def get_wallpaper_dir():
     return HOME / "Pictures" / "Wallpapers"
 
 
-def api_get(url, api_key=""):
+def api_get(url, api_key="", retries=3):
     # Gets the url and the optional API Key
     if api_key:
         # if api key is given add it to the url with either ? or & depending on
@@ -166,20 +166,25 @@ def api_get(url, api_key=""):
     req = urllib.request.Request(
         url, headers={"User-Agent": UA}
     )  # Makes a url request. Adds a User-Agent for security
-    try:
-        # Tries a GET-request with a 15 second timeout and converts the json
-        # repsonse to a python dict
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as e:  # Catches HTTP Errors
-        msg = f"API error: {e.code} {e.reason}"
-        if e.code == 429:  # Special case for rate limits errors
-            print("Rate limited. API key helps.", file=sys.stderr)
-        raise RuntimeError(msg)
-    except urllib.error.URLError as e:  # Catches Network Errors
-        msg = f"Network error: {e.reason}"
-        print(msg, file=sys.stderr)
-        raise RuntimeError(msg)
+
+    for i in range(retries):
+        try:
+            # Tries a GET-request with a 15 second timeout and converts the json
+            # repsonse to a python dict
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:  # Catches HTTP Errors
+            msg = f"API error: {e.code} {e.reason}"
+            if e.code == 429:  # Special case for rate limits errors
+                print("Rate limited. API key helps.", file=sys.stderr)
+            elif e.code >= 500 and i < retries - 1:
+                time.sleep(2**i)
+                continue
+            raise RuntimeError(msg)
+        except urllib.error.URLError as e:  # Catches Network Errors
+            msg = f"Network error: {e.reason}"
+            print(msg, file=sys.stderr)
+            raise RuntimeError(msg)
 
 
 def download_file(url, dest):  # Downloads a image and stores it in a given dir
