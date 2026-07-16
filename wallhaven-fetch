@@ -675,12 +675,17 @@ def cmd_daemon(config, run_loop=True):
             LOCK.unlink(missing_ok=True)
 
 
+def cmd_version():
+    print(f"wallhaven-fetch version {CURRENT_VERSION:.2f}")
+
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print("Usage:")
         print("  wallhaven-fetch random              Random from saved filters")
         print("  wallhaven-fetch daemon              Daemon mode (auto-rotate)")
         print("  wallhaven-fetch update              Update")
+        print("  wallhaven-fetch version             Show script version")
         print("  wallhaven-fetch search <query>      search wallhaven")
         print("  wallhaven-fetch download <id>       Download by ID")
         print(
@@ -692,13 +697,17 @@ def main():
         )
         sys.exit(0)
 
+    cmd = sys.argv[1]
+
+    if cmd in ("version", "-v", "--version"):
+        cmd_version()
+        sys.exit(0)
+
     try:
         config = load_config()
     except Exception as e:
         notify("Wallhaven", f"Config error: {e}", "critical")
         sys.exit(1)
-
-    cmd = sys.argv[1]
 
     if cmd not in ("preview", "external-daemon"):
         check_for_updates()
