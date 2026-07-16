@@ -570,6 +570,8 @@ def cmd_daemon(config, run_loop=True):
     except (FileNotFoundError, ValueError, ProcessLookupError):
         pass
 
+    loop_index = 0
+
     # If the user requested the daemon to run in loop/background mode
     if run_loop:
         LOCK.write_text(str(os.getpid()))
@@ -587,6 +589,10 @@ def cmd_daemon(config, run_loop=True):
         while True:
             try:
                 cmd_random(config)
+                loop_index += 1
+
+                if loop_index > 25:
+                    cmd_clear()
             except SystemExit:
                 pass
             except Exception as e:
