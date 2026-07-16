@@ -46,7 +46,7 @@ if [ -f "$CONFIG_FILE" ]; then
             "name": "Wallhaven"
         }'
 
-		if ! jq -e '.launcher.actions[] | select(.name == "Wallhaven")' "$CONFIG_FILE" >/dev/null; then
+		if ! jq -e '.launcher.actions[]' "$CONFIG_FILE" >/dev/null; then
 			jq --argjson action "$NEW_ACTION" '.launcher.actions += [$action]' "$CONFIG_FILE" >temp.json && mv temp.json "$CONFIG_FILE"
 			echo "Successfully added Wallhaven action to configuration."
 		else
