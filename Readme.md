@@ -18,7 +18,9 @@ A wallpaper script that pulls wallpapers from wallhaven and integrates with cael
   wallhaven-fetch random          -  Random from saved filters
   wallhaven-fetch daemon          -  Daemon mode (auto-rotate)
   wallhaven-fetch search <query>  -  Search Wallhaven
+     --page <page_number> to go to specific page number
   wallhaven-fetch download <id>   -  Download by ID
+  wallhaven-fetch update          -  To Update
   wallhaven-fetch clear           -  Wipe downloaded wallpapers & cache
   wallhaven-fetch config          -  Open config file
   wallhaven-fetch external-daemon -  Daemon mode (auto-rotate) (external mode)
