@@ -400,12 +400,15 @@ def cmd_preview(url):
     print(f"Thumbnail cached: {local_path}\n\nInstall 'chafa' for in-terminal preview.")
 
 
-def cmd_search(config, query):
+def cmd_search(config, query, page_togo=1):
     if shutil.which("fzf") is None:
         print("Error: fzf is not installed. Please install it.", file=sys.stderr)
         sys.exit(1)
 
-    page = 1
+    if page_togo > 0:
+        page = page_togo
+    else:
+        page = 1
     script_path = os.path.abspath(__file__)
 
     while True:
@@ -570,8 +573,6 @@ def cmd_daemon(config, run_loop=True):
     except (FileNotFoundError, ValueError, ProcessLookupError):
         pass
 
-    loop_index = 0
-
     # If the user requested the daemon to run in loop/background mode
     if run_loop:
         LOCK.write_text(str(os.getpid()))
@@ -585,6 +586,8 @@ def cmd_daemon(config, run_loop=True):
         signal.signal(signal.SIGINT, unlock)
 
         notify("Wallhaven", f"Daemon started (every {interval} min)", "low")
+
+        loop_index = 0
 
         while True:
             try:
@@ -615,7 +618,7 @@ def main():
         print("Usage:")
         print("  wallhaven-fetch random             Random from saved filters")
         print("  wallhaven-fetch daemon             Daemon mode (auto-rotate)")
-        print("  wallhaven-fetch search <query>     Search Wallhaven")
+        print("  wallhaven-fetch search <query>     search wallhaven")
         print("  wallhaven-fetch download <id>      Download by ID")
         print("  wallhaven-fetch clear              Wipe downloaded wallpapers & cache")
         print("  wallhaven-fetch config             Open config file")
@@ -640,7 +643,20 @@ def main():
         elif cmd == "clear":
             cmd_clear()
         elif cmd == "search" and len(sys.argv) > 2:
-            cmd_search(config, " ".join(sys.argv[2:]))
+            args = sys.argv[2:]
+            page_togo = 1
+
+            if "--page" in args:
+                try:
+                    page_idx = args.index("--page")
+                    page_togo = int(args[page_idx + 1])
+                    args = args[:page_idx] + args[page_idx + 2 :]
+                except (ValueError, IndexError):
+                    print("Error: Invalid page number provided.", file=sys.stderr)
+                    sys.exit(1)
+
+            query = " ".join(args)
+            cmd_search(config, query, page_togo)
         elif cmd == "preview" and len(sys.argv) > 2:
             cmd_preview(sys.argv[2])
         elif cmd == "download" and len(sys.argv) > 2:
