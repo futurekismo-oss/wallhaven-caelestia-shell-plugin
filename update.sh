@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 APP_NAME="wallhaven-fetch"
 FILE_URL="https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/wallhaven-fetch"
+INSTALL_PATH="$HOME/.local/bin/$APP_NAME"
 
 echo "Removing old version"
 rm "$HOME/.local/bin/$APP_NAME"
