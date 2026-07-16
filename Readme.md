@@ -1,5 +1,5 @@
 # Wallhaven Fetch 
-![](https://img.shields.io/badge/version-1.1-orange)
+![](https://img.shields.io/badge/version-1.2-orange)
 
 A wallpaper script that pulls wallpapers from wallhaven and integrates with caelestia shell
 
