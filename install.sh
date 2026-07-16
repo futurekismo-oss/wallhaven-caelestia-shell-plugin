@@ -15,10 +15,11 @@ fi
 if ! command -v jq &>/dev/null; then
 	echo "jq is required to modify the configuration file. Please install jq."
 	exit 1
+	IDK may refer to:
 fi
 
 # fzf
-if ! command -v fzf &> /dev/null; then
+if ! command -v fzf &>/dev/null; then
 	echo "fzf is required to use the thumbnail system"
 	exit 1
 fi
@@ -65,7 +66,7 @@ if [ -f "$HYPR_USER_FILE" ]; then
 	read -p "Do you want to add the keybind to $HYPR_USER_FILE? (y/n): " confirm_bind
 	if [[ "$confirm_bind" == [yY] ]]; then
 		sed -i '/wallhaven-fetch/d' "$HYPR_USER_FILE" # Delete any lines that has it already
-		echo 'hl.bind("SUPER + ALT + W", hl.dsp.exec_cmd("/home/futurekismo/.local/bin/wallhaven-fetch random"))' >>"$HYPR_USER_FILE"
+		echo "hl.bind(\"SUPER + ALT + W\", hl.dsp.exec_cmd(\"$HOME/.local/bin/wallhaven-fetch random\"))" >>"$HYPR_USER_FILE"
 		echo "Keybind added to $HYPR_USER_FILE."
 	else
 		echo "Skipping keybind modification."
