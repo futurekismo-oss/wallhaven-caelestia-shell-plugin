@@ -50,7 +50,7 @@ Clone the repo and run the install script
 **OR**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/install.sh | bash
+bash <(curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/install.sh)
 ```
 
 ## Update
@@ -66,6 +66,6 @@ Run the uninstall script
 **OR**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/uninstall.sh | bash
+bash <(curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/uninstall.sh)
 ```
 
