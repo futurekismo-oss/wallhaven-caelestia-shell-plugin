@@ -23,7 +23,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 THUMB_CACHE_DIR = CACHE_DIR / "thumbnails"
 REPO_NAME = "wallhaven-caelestia-shell-plugin"
 
-CURRENT_VERSION = "1.6"
+CURRENT_VERSION = "1.5"
 CACHE_FILE = CACHE_DIR / "version_cache.json"
 # Uses a Notify Id so the notification history
 # doesnt clutter by replacing the notifcation rather than
@@ -474,7 +474,7 @@ def check_for_updates():
 
 def cmd_update():
     print("Fetching and running the installation script...")
-    update_cmd = "curl -sSL https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash"
+    update_cmd = "curl -sSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash"
 
     result = subprocess.run(
         update_cmd,
@@ -484,7 +484,7 @@ def cmd_update():
     if result.returncode == 0:
         remote_version = get_latest_release_tag("futurekismo-oss", REPO_NAME)
 
-        print(f"\nUpdated from {CURRENT_VERSION} -> {remote_version}\n")
+        print(f"\nUpdated from {CURRENT_VERSION} -> {remote_version}")
 
         print("Update applied successfully!")
         sys.exit(0)
