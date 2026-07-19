@@ -484,7 +484,7 @@ def cmd_update():
     if result.returncode == 0:
         remote_version = get_latest_release_tag("futurekismo-oss", REPO_NAME)
 
-        print(f"\nUpdated from {CURRENT_VERSION} -> {remote_version}")
+        print(f"\nUpdated to version {remote_version}")
 
         print("Update applied successfully!")
         sys.exit(0)
