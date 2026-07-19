@@ -243,7 +243,11 @@ def set_wallpaper(path, config=None):
 def prune_cache(idx, config):
     max_keep = config.get("max_keep_wallpapers", 30)
     enable = config.get("auto_delete_wallpapers", False)
-    if max_keep <= 0 or len(idx) <= max_keep or enable:
+
+    if not enable:
+        return idx
+
+    if max_keep <= 0 or len(idx) <= max_keep:
         return idx
 
     all_keys = list(idx.keys())
