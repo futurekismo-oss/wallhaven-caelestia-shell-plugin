@@ -478,7 +478,12 @@ def cmd_update():
     current_script_path = os.path.abspath(__file__)
     install_dir = os.path.dirname(current_script_path)
 
-    update_cmd = f"export INSTALL_DIR='{install_dir}'; curl -sSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash"
+    if "wallhaven-caelestia-shell-plugin" in install_dir:
+        env_override = ""
+    else:
+        env_override = f"export INSTALL_DIR='{install_dir}'; "
+
+    update_cmd = f"{env_override}curl -sSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash"
 
     result = subprocess.run(
         update_cmd,
