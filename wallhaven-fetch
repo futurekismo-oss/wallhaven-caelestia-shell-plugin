@@ -474,7 +474,11 @@ def check_for_updates():
 
 def cmd_update():
     print("Fetching and running the installation script...")
-    update_cmd = "curl -sSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash"
+
+    current_script_path = os.path.abspath(__file__)
+    install_dir = os.path.dirname(current_script_path)
+
+    update_cmd = f"export INSTALL_DIR='{install_dir}'; curl -sSL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/update.sh | bash"
 
     result = subprocess.run(
         update_cmd,
@@ -483,14 +487,12 @@ def cmd_update():
 
     if result.returncode == 0:
         remote_version = get_latest_release_tag("futurekismo-oss", REPO_NAME)
-
-        print(f"\nUpdated to version {CURRENT_VERSION} -> {remote_version}\n")
-
-        print("Update applied successfully!")
+        print(f"\nUpdate applied successfully! Remote version: {remote_version}")
+        print("Please restart or re-run the script to use the updated version.\n")
         sys.exit(0)
     else:
         print(
-            "Updater failed. Error: {result.stderr}",
+            "Updater failed.",
             file=sys.stderr,
         )
         sys.exit(1)

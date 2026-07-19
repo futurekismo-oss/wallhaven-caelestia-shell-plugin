@@ -4,7 +4,9 @@ set -euo pipefail
 
 APP_NAME="wallhaven-fetch"
 FILE_URL="https://raw.githubusercontent.com/futurekismo-oss/wallhaven-caelestia-shell-plugin/refs/heads/main/wallhaven-fetch"
-INSTALL_DIR="$HOME/.local/bin"
+
+# Use the passed INSTALL_DIR if available, otherwise default to ~/.local/bin
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 INSTALL_PATH="$INSTALL_DIR/$APP_NAME"
 
 mkdir -p "$INSTALL_DIR"
