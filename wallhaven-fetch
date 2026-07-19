@@ -23,7 +23,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 THUMB_CACHE_DIR = CACHE_DIR / "thumbnails"
 REPO_NAME = "wallhaven-caelestia-shell-plugin"
 
-CURRENT_VERSION = "1.9"
+CURRENT_VERSION = "2.0"
 CACHE_FILE = CACHE_DIR / "version_cache.json"
 # Uses a Notify Id so the notification history
 # doesnt clutter by replacing the notifcation rather than
