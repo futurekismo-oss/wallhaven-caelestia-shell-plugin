@@ -121,6 +121,10 @@ def write_default_config():  # Default Config file
     "use_dynamic_scheme": false,
     
     "max_keep_wallpapers": 30
+
+
+    // Turn off auto-delete of wallpapers
+    "auto-delete-wallpapers": false
 }
 """)
 
@@ -238,7 +242,8 @@ def set_wallpaper(path, config=None):
 
 def prune_cache(idx, config):
     max_keep = config.get("max_keep_wallpapers", 30)
-    if max_keep <= 0 or len(idx) <= max_keep:
+    enable = config.get("auto_delete_wallpapers", False)
+    if max_keep <= 0 or len(idx) <= max_keep or enable:
         return idx
 
     all_keys = list(idx.keys())
