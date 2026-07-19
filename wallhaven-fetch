@@ -124,7 +124,7 @@ def write_default_config():  # Default Config file
 
 
     // Turn off auto-delete of wallpapers
-    "auto-delete-wallpapers": false
+    "auto_delete_wallpapers": false
 }
 """)
 
